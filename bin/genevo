@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+import pygame, random, sys
+from pygame.locals import *
+
+from genevo.bitint import BitInt
+from genevo.engine import Engine
+
+GREEN   = Color (000, 255, 000)
+WHITE   = Color (255, 255, 255)
+BLACK   = Color (000, 000, 000)
+
+WIDTH   = 600
+HEIGHT  = 600
+CELLXNR = 100 # number of cells
+CELLYNR = 100
+CELLWIDTH  = WIDTH // CELLXNR
+CELLHEIGHT = HEIGHT // CELLYNR
+
+FPS  = pygame.time.Clock ()
+SURF = pygame.display.set_mode ((WIDTH, HEIGHT))
+
+clade1 = BitInt (random.getrandbits (16))
+clade2 = BitInt (random.getrandbits (16))
+clade3 = BitInt (random.getrandbits (16))
+clade4 = BitInt (random.getrandbits (16))
+
+init = {
+    clade1: [(CELLXNR  - 1, i) for i in range (25, CELLYNR // 2)],
+    clade2: [(CELLXNR  - 2, i) for i in range (25, CELLYNR // 2)],  
+    clade3: [(CELLXNR // 3, i) for i in range (25, CELLYNR // 2)],
+    clade4: [(CELLXNR // 4, i) for i in range (25, CELLYNR // 2)],
+}
+
+game_engine = Engine (CELLXNR, CELLYNR, init, debug = 0)
+gens = 0
+
+
+def cladehash (cell):
+    return (0, 0, cell.trait)
+
+def aggrohash (cell):
+    return (cell.aggro * 127, 0, cell.attack % 256)
+
+def agehash (cell):
+    return (0, cell.age % 256, 0)
+
+def sumhash (cell):
+    return (0, 0, sum (cell.genom) % 256)
+
+
+""" shorten genome to a RGB color """
+
+def main ():
+    cellhash = [cladehash, aggrohash, agehash, sumhash]
+    hashno = 0
+
+    while 1:
+
+        game_engine.step ()
+
+        for event in pygame.event.get ():
+            if event.type == QUIT:
+                pygame.quit ()
+                sys.exit ()
+            if event.type == KEYDOWN:
+                k = event.key - 48
+                if k in range (10) and k <= len (cellhash):
+                    hashno = k - 1
+
+        SURF.fill (WHITE)
+        for x in range (CELLXNR):
+            for y in range (CELLYNR):
+                cell = game_engine [x] [y]
+                if cell != None:
+                    pygame.draw.rect (
+                        SURF, cellhash [hashno] (cell), 
+                        (x * CELLWIDTH, y * CELLHEIGHT, CELLWIDTH, CELLHEIGHT)
+                    )
+
+        [pygame.draw.line (SURF, BLACK, (i, 0), (i, HEIGHT))
+                for i in range (0, WIDTH, CELLWIDTH)]
+        [pygame.draw.line (SURF, BLACK, (0, i), (WIDTH, i))
+                for i in range (0, HEIGHT, CELLHEIGHT)]
+
+        pygame.display.update ()
+        FPS.tick (8)
+
+try:
+    main ()
+except KeyboardInterrupt:
+    pop = game_engine.count_clades ()
+    print ("{} different genomes among {} individuals observed.".format (
+        len (pop),
+        sum (pop.values ())
+    ))
