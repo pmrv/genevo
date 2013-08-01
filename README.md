@@ -22,6 +22,6 @@ it will still like you
   3. the more blue it is the stronger the cell and is less likely to get killed when attacked or attacking
   4. the greener a cell the longer it has to live, that is black cell probably dies within the next few turns
   5. this is a bit special, the greyshade is again similar for similar cells, 
-where ever a red square pops blinks a cell has been killed in combat and 
+but where ever a red square pops blinks a cell has been killed in combat and 
 where ever a blue one blinks there was a mutation while mating
   
