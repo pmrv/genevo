@@ -17,6 +17,9 @@ class Engine:
         self.debug = debug
 
         self.gen  = 0
+        self.births = 0
+        self.deaths = 0
+        self.mutations = 0
         self.lenx = lenx
         self.leny = leny
 
@@ -91,8 +94,8 @@ class Engine:
             print ("Round {}".format (self.gen))
         self.gen += 1
 
-        dead = []
-        born = []
+        dead = {}
+        born = {}
 
         for x in range (self.lenx):
             for y in range (self.leny):
@@ -107,16 +110,21 @@ class Engine:
                     if self.debug:
                         print ("{},{}".format (x, y), 
                                cd.args [0])
-                    dead.append ( (x, y) )
+                    dead [x, y] = cd.args [0]
                 except CellBirth as cb:
                     if self.debug:
                         print ("{},{} was just born.".format (x, y))
                     fetus = Cell (cb.args [0])
+                    self.mutations += cb.args [1]
                     bx, by = self.find_free (x, y)
-                    born.append ( (bx, by, fetus) )
+                    born [bx, by] = fetus, cb.args [1]
 
         for x, y in dead:
             self [x] [y] = None
+            self.deaths += 1
 
-        for x, y, fetus in born:
+        for (x, y), (fetus, _) in born.items ():
             self [x] [y] = fetus
+            self.births += 1
+
+        return dead, born

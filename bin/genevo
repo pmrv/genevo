@@ -2,6 +2,8 @@
 import pygame, random, sys
 from pygame.locals import *
 
+from random import randint
+
 from genevo.bitint import BitInt
 from genevo.engine import Engine
 
@@ -11,8 +13,8 @@ BLACK   = Color (000, 000, 000)
 
 WIDTH   = 600
 HEIGHT  = 600
-CELLXNR = 100 # number of cells
-CELLYNR = 100
+CELLXNR =  60 # number of cells
+CELLYNR =  60
 CELLWIDTH  = WIDTH // CELLXNR
 CELLHEIGHT = HEIGHT // CELLYNR
 
@@ -24,11 +26,16 @@ clade2 = BitInt (random.getrandbits (16))
 clade3 = BitInt (random.getrandbits (16))
 clade4 = BitInt (random.getrandbits (16))
 
+def make_init (cx, cy):
+    return [ (x % CELLXNR, y % CELLYNR) for x in (cx - 1, cx, cx + 1)
+                    for y in (cy - 1, cy, cy + 1) ]
+
 init = {
-    clade1: [(CELLXNR  - 1, i) for i in range (25, CELLYNR // 2)],
-    clade2: [(CELLXNR  - 2, i) for i in range (25, CELLYNR // 2)],  
-    clade3: [(CELLXNR // 3, i) for i in range (25, CELLYNR // 2)],
-    clade4: [(CELLXNR // 4, i) for i in range (25, CELLYNR // 2)],
+        clade: sum (
+            (make_init (randint (0, CELLXNR - 1), randint (0, CELLYNR - 1))
+                for _ in range (randint (1, 10))), []
+            )
+            for clade in (clade1, clade2, clade3, clade4)
 }
 
 game_engine = Engine (CELLXNR, CELLYNR, init, debug = 0)
@@ -36,27 +43,36 @@ gens = 0
 
 
 def cladehash (cell):
-    return (0, 0, cell.trait)
+    c = [0, 0, 0]
+    c [(cell.genom % 2) + 1] = cell.trait
+    return c
 
 def aggrohash (cell):
-    return (cell.aggro * 127, 0, cell.attack % 256)
+    return (cell.aggro << 2, 0, 0)
+
+def attackhash (cell):
+    return (0, 0, cell.attack << 2)
 
 def agehash (cell):
-    return (0, cell.age % 256, 0)
+    return (0, cell.age if cell.age < 256 else 255, 0)
 
-def sumhash (cell):
-    return (0, 0, sum (cell.genom) % 256)
+def overlay (cell):
+    # display traits in greyscale, to make the overlays easier to spot
+    return (cell.trait,) * 3
 
-
-""" shorten genome to a RGB color """
+def drawcell (x, y, color):
+    pygame.draw.rect (
+        SURF, color, 
+        (x * CELLWIDTH, y * CELLHEIGHT, CELLWIDTH, CELLHEIGHT)
+    )
 
 def main ():
-    cellhash = [cladehash, aggrohash, agehash, sumhash]
+    cellhash = [cladehash, aggrohash, attackhash, agehash, overlay]
     hashno = 0
 
     while 1:
 
-        game_engine.step ()
+        dead, born = game_engine.step ()
 
         for event in pygame.event.get ():
             if event.type == QUIT:
@@ -64,7 +80,7 @@ def main ():
                 sys.exit ()
             if event.type == KEYDOWN:
                 k = event.key - 48
-                if k in range (10) and k <= len (cellhash):
+                if 0 < k <= len (cellhash):
                     hashno = k - 1
 
         SURF.fill (WHITE)
@@ -72,10 +88,13 @@ def main ():
             for y in range (CELLYNR):
                 cell = game_engine [x] [y]
                 if cell != None:
-                    pygame.draw.rect (
-                        SURF, cellhash [hashno] (cell), 
-                        (x * CELLWIDTH, y * CELLHEIGHT, CELLWIDTH, CELLHEIGHT)
-                    )
+                    drawcell (x, y, cellhash [hashno] (cell))
+                if hashno == len (cellhash) - 1:
+                    # overlays
+                    if   (x, y) in dead and dead [x, y] == "Was murdered.":
+                        drawcell (x, y, (255, 0, 0, 200))
+                    elif (x, y) in born and born [x, y] [1]:
+                        drawcell (x, y, (0, 0, 255, 200))
 
         [pygame.draw.line (SURF, BLACK, (i, 0), (i, HEIGHT))
                 for i in range (0, WIDTH, CELLWIDTH)]
@@ -83,13 +102,18 @@ def main ():
                 for i in range (0, HEIGHT, CELLHEIGHT)]
 
         pygame.display.update ()
-        FPS.tick (8)
+        FPS.tick (16)
 
 try:
     main ()
 except KeyboardInterrupt:
     pop = game_engine.count_clades ()
+    print ("")
     print ("{} different genomes among {} individuals observed.".format (
         len (pop),
         sum (pop.values ())
+    ))
+    print ("{} died. {} born. {} born as mutants. Mutationrate {}.".format (
+        game_engine.deaths, game_engine.births, game_engine.mutations,
+        game_engine.mutations / game_engine.births
     ))

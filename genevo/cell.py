@@ -16,7 +16,7 @@ class Cell:
         self.alive = True # used for fighting
         self.genom = genom
         self.age = 1 << genom [:2] + 1 << (2 + genom [2:4])
-        self.hunger = (genom [4:6]  + 1) % 9
+        self.hunger = (genom [4:7]  - 2) % 9
         self.horny = sum (
                 k * 2 ** -(i + 3) for i, k in enumerate (genom [ 9:12])
         )
@@ -24,8 +24,8 @@ class Cell:
                 k * 2 ** -(i + 4) for i, k in enumerate (genom [12:16])
         )
 
-        self.attack = genom [::3]
-        self.aggro  = self.attack % 2
+        self.attack = genom [::3] # max 2**7 - 1 = 127
+        self.aggro  = genom [1::3]
         self.trait  = self.hash (self)
 
     @staticmethod
@@ -37,7 +37,7 @@ class Cell:
         if self.trait == mate.trait:
             return True
         m = BitInt (~(self.trait ^ mate.trait))
-        return (m.bitcount () / 16) < self.mutate 
+        return (m.bitcount () / 16) < (self.mutate * 10)
 
     def mate (self, mate):
 
@@ -47,13 +47,14 @@ class Cell:
         # recombine genomes
         new = sum (seg (i) << i for i in range (0, 16, 4))
 
-        if random.random () < (self.mutate + .01):
+        mutated = random.random () < (self.mutate + .01)
+        if mutated:
             mut1 = random.getrandbits (16)
             mut2 = random.getrandbits (16)
             mut3 = random.getrandbits (16)
             new ^= (mut1 ^ mut2) & mut3
         
-        return BitInt (new)
+        return BitInt (new), mutated
 
     def cycle (self, neighbours):
 
@@ -67,20 +68,20 @@ class Cell:
         lneigh = len (neighbours)
         if lneigh > 0:
             mhunger = sum (n.hunger for n in neighbours) / lneigh
-            if mhunger < lneigh:
+            if mhunger > 0 and lneigh / mhunger * 128 > self.aggro:
+                opponent = random.choice (neighbours)
+                if not self.checkout (opponent): # leave our own kind alone
+                    if self.attack >= opponent.attack:
+                        opponent.alive = False
+                    else:
+                        raise CellDeath ("Was murdered.")
+
+            elif mhunger < lneigh:
                 raise CellDeath ("Starved.")
 
-        if lneigh > 0 and self.aggro:
-            opponent = random.choice (neighbours)
-            if not self.checkout (opponent): # leave our own kind alone
-                if self.attack >= opponent.attack:
-                    opponent.alive = False
-                else:
-                    raise CellDeath ("Was killed.")
-
         # if we have 8 neighbours, there'd be no room for our child
-        if 0 < lneigh < 8 and random.random () < (self.horny + .001):
+        if 0 < lneigh < 8 and random.random () < (self.horny + .01):
             mates = list (
                     filter (self.checkout, neighbours))
             if len (mates) > 0:
-                raise CellBirth (self.mate (random.choice (mates)))
+                raise CellBirth (*self.mate (random.choice (mates)))
