@@ -28,6 +28,8 @@ class Cell:
         self.aggro  = genom [1::3]
         self.trait  = self.hash (self)
 
+        self.neighbours = [] # list of all neighbours
+
     @staticmethod
     def hash (cell):
         g = cell.genom
@@ -56,7 +58,7 @@ class Cell:
         
         return BitInt (new), mutated
 
-    def cycle (self, neighbours):
+    def cycle (self):
 
         if not self.alive: # have been murdered by another cell
             raise CellDeath ("Was murdered.")
@@ -65,6 +67,7 @@ class Cell:
         if self.age < 0:
             raise CellDeath ("Died of age.")
 
+        neighbours = self.neighbours
         lneigh = len (neighbours)
         if lneigh > 0:
             mhunger = sum (n.hunger for n in neighbours) / lneigh
@@ -73,10 +76,11 @@ class Cell:
                 if not self.checkout (opponent): # leave our own kind alone
                     if self.attack >= opponent.attack:
                         opponent.alive = False
+                        return
                     else:
                         raise CellDeath ("Was murdered.")
 
-            elif mhunger < lneigh:
+            if mhunger < lneigh:
                 raise CellDeath ("Starved.")
 
         # if we have 8 neighbours, there'd be no room for our child

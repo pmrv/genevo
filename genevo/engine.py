@@ -27,7 +27,8 @@ class Engine:
 
         for genom, pos in init.items ():
             for x, y in pos:
-                self [x] [y] = Cell (genom)
+                self.grid [x] [y] = Cell (genom)
+                self.grid [x] [y].neighbours = self.find_neighbours (x, y)
 
         if True or self.debug:
             for g in init:
@@ -42,14 +43,10 @@ class Engine:
                         c.aggro, c.attack)
                 )
 
-
-    def __getitem__ (self, x):
-        return self.grid [x]
-
     def make_grid (self):
         self.grid = [
-                [None for y in range (self.leny)]
-                      for x in range (self.lenx)
+                [None for _ in range (self.leny)]
+                      for _ in range (self.lenx)
         ]
 
     def find_neighbours (self, cx, cy):
@@ -59,7 +56,7 @@ class Engine:
         for x in (cx - 1, cx, cx + 1):
             for y in (cy - 1, cy, cy + 1):
 
-                cell = self [x % self.lenx] [y % self.leny]
+                cell = self.grid [x % self.lenx] [y % self.leny]
                 if cell != None and not ( (x, y) == (cx, cy) ):
                     neighbours.append (cell)
 
@@ -70,7 +67,7 @@ class Engine:
         free = []
         for x in (cx - 1, cx, cx + 1):
             for y in (cy - 1, cy, cy + 1):
-                if self [x % self.lenx] [y % self.leny] == None:
+                if self.grid [x % self.lenx] [y % self.leny] == None:
                     free.append ( (x % self.lenx, y % self.leny) )
 
         return random.choice (free)
@@ -81,7 +78,7 @@ class Engine:
         for x in range (self.lenx):
             for y in range (self.leny):
 
-                c = self [x] [y]
+                c = self.grid [x] [y]
                 if not c: continue
                 h = c.hash (c)
                 populus [h] = populus.get (h, 0) + 1
@@ -100,12 +97,12 @@ class Engine:
         for x in range (self.lenx):
             for y in range (self.leny):
 
-                cell = self [x] [y]
+                cell = self.grid [x] [y]
                 if cell == None:
                     continue
 
                 try:
-                    cell.cycle (self.find_neighbours (x, y))
+                    cell.cycle ()
                 except CellDeath as cd:
                     if self.debug:
                         print ("{},{}".format (x, y), 
@@ -120,11 +117,21 @@ class Engine:
                     born [bx, by] = fetus, cb.args [1]
 
         for x, y in dead:
-            self [x] [y] = None
+            for c in self.find_neighbours (x, y):
+                try:
+                    c.neighbours.remove (self.grid [x] [y])
+                except ValueError:
+                    print ("Tried to remove {} from {} but couldn't.".format (
+                            self.grid [x] [y], c))
+
+            self.grid [x] [y] = None
             self.deaths += 1
 
         for (x, y), (fetus, _) in born.items ():
-            self [x] [y] = fetus
+            self.grid [x] [y] = fetus
             self.births += 1
+            fetus.neighbours  = self.find_neighbours (x, y)
+            for c in fetus.neighbours:
+                c.neighbours.append (fetus)
 
         return dead, born

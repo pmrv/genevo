@@ -73,6 +73,7 @@ def main ():
     while 1:
 
         dead, born = game_engine.step ()
+        print (FPS.get_fps ())
 
         for event in pygame.event.get ():
             if event.type == QUIT:
@@ -86,7 +87,7 @@ def main ():
         SURF.fill (WHITE)
         for x in range (CELLXNR):
             for y in range (CELLYNR):
-                cell = game_engine [x] [y]
+                cell = game_engine.grid [x] [y]
                 if cell != None:
                     drawcell (x, y, cellhash [hashno] (cell))
                 if hashno == len (cellhash) - 1:
@@ -102,18 +103,22 @@ def main ():
                 for i in range (0, HEIGHT, CELLHEIGHT)]
 
         pygame.display.update ()
+        if game_engine.gen == 5e2:
+            break
         FPS.tick (16)
 
 try:
     main ()
 except KeyboardInterrupt:
-    pop = game_engine.count_clades ()
-    print ("")
-    print ("{} different genomes among {} individuals observed.".format (
-        len (pop),
-        sum (pop.values ())
-    ))
-    print ("{} died. {} born. {} born as mutants. Mutationrate {}.".format (
-        game_engine.deaths, game_engine.births, game_engine.mutations,
-        game_engine.mutations / game_engine.births
-    ))
+    pass
+
+pop = game_engine.count_clades ()
+print ("")
+print ("{} different genomes among {} individuals observed.".format (
+    len (pop),
+    sum (pop.values ())
+))
+print ("{} died. {} born. {} born as mutants. Mutationrate {}.".format (
+    game_engine.deaths, game_engine.births, game_engine.mutations,
+    game_engine.mutations / game_engine.births
+))

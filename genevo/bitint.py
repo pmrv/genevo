@@ -35,17 +35,23 @@ class BitInt (int):
         if i.stop  == None:
             b = len (self)
 
-        if a >= b:
-            return BitInt (0)
-
         if i.step == None:
             return BitInt (( self % (1 << b) ) // (1 << a))
 
+        if i.step < 0:
+            t = a
+            a = b
+            b = t
+            s = abs (s)
+
+        if a >= b:
+            return BitInt (0)
+
         z = 0
         for k in range (a, b, s):
-            z += self [k] << (k // s)
+            z += self % (1 << k + 1) >> k << (k // s)
 
-        return BitInt (z)
+        return BitInt (z >> (a // s))
 
     def __str__ (self):
         return bin (self)
