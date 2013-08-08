@@ -15,39 +15,42 @@ class Cell:
 
         self.alive = True # used for fighting
         self.genom = genom
-        self.age = 1 << genom [:2] + 1 << (2 + genom [2:4])
-        self.hunger = (genom [4:7]  - 2) % 9
+        self.age = 1 << genom.slice (0, 2) + 1 << (2 + genom.slice (2, 4))
+        self.hunger = (genom.slice (4, 7)  - 2) % 9
         self.horny = sum (
-                k * 2 ** -(i + 3) for i, k in enumerate (genom [ 9:12])
+                k * 2 ** -(i + 3) 
+                    for i, k in enumerate (BitInt (genom.slice ( 9, 12)))
         )
         self.mutate = sum (
-                k * 2 ** -(i + 4) for i, k in enumerate (genom [12:16])
+                k * 2 ** -(i + 4) 
+                    for i, k in enumerate (BitInt (genom.slice (12, 16)))
         )
 
-        self.attack = genom [::3] # max 2**7 - 1 = 127
-        self.aggro  = genom [1::3]
+        self.genlen = len (genom)
+        self.attack = genom.slice (0, self.genlen, 3) # max 2**7 - 1 = 127
+        self.aggro  = genom.slice (1, self.genlen, 3)
         self.trait  = self.hash (self)
 
         self.neighbours = [] # list of all neighbours
 
     @staticmethod
     def hash (cell):
-        g = cell.genom
-        return BitInt (g [::2] ^ g [1::2])
+        g  = cell.genom
+        lg = cell.genlen
+        return BitInt (g.slice (0, lg, 2) ^ g.slice (1, lg, 2))
 
     def checkout (self, mate):
         if self.trait == mate.trait:
             return True
-        m = BitInt (~(self.trait ^ mate.trait))
-        return (m.bitcount () / 16) < (self.mutate * 10)
+        m = BitInt (~(self.trait.base ^ mate.trait.base))
+        return (m.bits () / 16) < (self.mutate * 10)
 
     def mate (self, mate):
 
-        seg = lambda i: random.choice (
-                (self.genom [i:i + 4], mate.genom [i:i + 4])
-        )
+        gens = (self.genom, mate.genom)
         # recombine genomes
-        new = sum (seg (i) << i for i in range (0, 16, 4))
+        new = sum (gens [random.randint (0, 1)].slice (i, i + 4) << i 
+                for i in range (0, self.genlen, 4))
 
         mutated = random.random () < (self.mutate + .01)
         if mutated:

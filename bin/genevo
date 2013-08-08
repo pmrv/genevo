@@ -43,9 +43,7 @@ gens = 0
 
 
 def cladehash (cell):
-    c = [0, 0, 0]
-    c [(cell.genom % 2) + 1] = cell.trait
-    return c
+    return (cell.genom.base % 256, 0, cell.genom.base >> 8)
 
 def aggrohash (cell):
     return (cell.aggro << 2, 0, 0)
@@ -58,7 +56,7 @@ def agehash (cell):
 
 def overlay (cell):
     # display traits in greyscale, to make the overlays easier to spot
-    return (cell.trait,) * 3
+    return (cell.trait.base,) * 3
 
 def drawcell (x, y, color):
     pygame.draw.rect (

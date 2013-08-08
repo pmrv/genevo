@@ -70,7 +70,7 @@ class Engine:
                 if self.grid [x % self.lenx] [y % self.leny] == None:
                     free.append ( (x % self.lenx, y % self.leny) )
 
-        return random.choice (free)
+        return random.choice (free) if free else (-1, -1)
 
     def count_clades (self):
 
@@ -114,7 +114,8 @@ class Engine:
                     fetus = Cell (cb.args [0])
                     self.mutations += cb.args [1]
                     bx, by = self.find_free (x, y)
-                    born [bx, by] = fetus, cb.args [1]
+                    if not bx == -1:
+                        born [bx, by] = fetus, cb.args [1]
 
         for x, y in dead:
             for c in self.find_neighbours (x, y):
