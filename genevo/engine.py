@@ -28,7 +28,12 @@ class Engine:
         for genom, pos in init.items ():
             for x, y in pos:
                 self.grid [x] [y] = Cell (genom)
-                self.grid [x] [y].neighbours = self.find_neighbours (x, y)
+
+        for x in range (lenx):
+            for y in range (leny):
+                c = self.grid [x] [y] 
+                if c:
+                    c.neighbours = self.find_neighbours (x, y)
 
         if True or self.debug:
             for g in init:

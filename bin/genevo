@@ -7,14 +7,13 @@ from random import randint
 from genevo.bitint import BitInt
 from genevo.engine import Engine
 
-GREEN   = Color (000, 255, 000)
 WHITE   = Color (255, 255, 255)
 BLACK   = Color (000, 000, 000)
 
 WIDTH   = 600
 HEIGHT  = 600
-CELLXNR =  60 # number of cells
-CELLYNR =  60
+CELLXNR =  50 # number of cells
+CELLYNR =  50
 CELLWIDTH  = WIDTH // CELLXNR
 CELLHEIGHT = HEIGHT // CELLYNR
 
@@ -56,7 +55,7 @@ def agehash (cell):
 
 def overlay (cell):
     # display traits in greyscale, to make the overlays easier to spot
-    return (cell.trait.base,) * 3
+    return (cell.trait,) * 3
 
 def drawcell (x, y, color):
     pygame.draw.rect (
@@ -76,7 +75,7 @@ def main ():
         for event in pygame.event.get ():
             if event.type == QUIT:
                 pygame.quit ()
-                sys.exit ()
+                return
             if event.type == KEYDOWN:
                 k = event.key - 48
                 if 0 < k <= len (cellhash):
