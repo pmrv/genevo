@@ -14,7 +14,7 @@ class Cell:
             raise ValueError ("Can't init Cell with non-int.")
 
         self.genom = genom
-        self.age   = genom.slice (0, 4) * 16
+        self.age   = genom.slice (0, 4) << 4
         self.hunger= genom.slice (4, 7) %  9
         self.horny = sum (
                 k * 2 ** -(i + 2) 
@@ -86,8 +86,6 @@ class Cell:
 
             mates  = []
             fiends = []
-            # Alternative, nicer but probably slower:
-            # mates, fiends = itertools.groupby (neighbours.sort (self.checkout), self.checkout).values ()
             for n in neighbours:
                 if self.checkout (n):
                     mates.append (n)

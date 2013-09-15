@@ -26,7 +26,8 @@ clade3 = BitInt (random.getrandbits (16))
 clade4 = BitInt (random.getrandbits (16))
 
 def make_init (cx, cy):
-    return [ (x % CELLXNR, y % CELLYNR) for x in (cx - 1, cx, cx + 1)
+    return [ (x % CELLXNR, y % CELLYNR) 
+                    for x in (cx - 1, cx, cx + 1)
                     for y in (cy - 1, cy, cy + 1) ]
 
 init = {
@@ -37,7 +38,7 @@ init = {
             for clade in (clade1, clade2, clade3, clade4)
 }
 
-game_engine = Engine (CELLXNR, CELLYNR, init, debug = 0)
+game_engine = Engine (CELLXNR, CELLYNR, init, debug = 1)
 gens = 0
 
 
@@ -84,7 +85,7 @@ def main ():
         SURF.fill (WHITE)
         for x in range (CELLXNR):
             for y in range (CELLYNR):
-                cell = game_engine.grid [x] [y]
+                cell = game_engine.grid [x, y]
                 if cell != None:
                     drawcell (x, y, cellhash [hashno] (cell))
                 if hashno == len (cellhash) - 1:
